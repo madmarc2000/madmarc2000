@@ -45,6 +45,20 @@ say "claude gefunden unter:"
 command -v -a claude 2>/dev/null | sed 's/^/  /' >> "$OUT"
 say "node: $(node -v 2>&1)"
 
+hr "1b. Hauptverdaechtiger: Token/Env aus ttyd+tmux (Fall vom 2026-08-13)"
+say "Env-Variablen (nur Namen und Laenge, keine Werte):"
+env | grep -E '^(CLAUDE_CODE|ANTHROPIC|DISABLE_|DO_NOT_TRACK)' \
+  | awk -F= '{print "  " $1 " (Laenge " length($2) ")"}' >> "$OUT"
+env | grep -qE '^CLAUDE_CODE_OAUTH_TOKEN=' \
+  && say "  >>> CLAUDE_CODE_OAUTH_TOKEN gesetzt — genau das blockierte den Start am 2026-08-13 <<<"
+say "tmux-Server-Environment:"
+tmux show-environment -g 2>/dev/null | grep -iE 'claude|anthropic' \
+  | awk -F= '{print "  " $1 " (Laenge " length($2) ")"}' >> "$OUT"
+say "Patch in start.sh vorhanden?"
+grep -n 'unset CLAUDE_CODE_OAUTH_TOKEN' "$HOME/CoworkProjects/ttyd-ipad/start.sh" 2>/dev/null \
+  | sed 's/^/  /' >> "$OUT" \
+  || say "  NEIN — 'unset CLAUDE_CODE_OAUTH_TOKEN' fehlt in start.sh (oder Datei fehlt)"
+
 hr "2. Binary antwortet?"
 run_t 25 claude --version
 
