@@ -9,7 +9,10 @@ OUT="$HOME/claude-doctor.txt"
 : > "$OUT"
 
 say() { printf '%s\n' "$*" >> "$OUT"; }
-hr()  { say ""; say "=== $* ==="; }
+# Abschnittsmarke: in den Report UND live auf den Bildschirm, damit sichtbar
+# ist, dass das Skript arbeitet und nicht haengt.
+hr()  { say ""; say "=== $* ==="; printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
+note() { printf '           %s\n' "$*" >&2; }
 
 # Befehl mit Timeout ausfuehren, Ausgabe (stdout+stderr) in den Report.
 # $1 = Sekunden, Rest = Befehl
@@ -25,12 +28,18 @@ run_t() {
   kill -9 "$_watch" 2>/dev/null
   if [ "$_rc" -ge 128 ]; then
     say "  >>> HAENGT / ABGEBROCHEN nach ${_secs}s (rc=$_rc)  <<<"
+    note "-> haengt, nach ${_secs}s abgebrochen (das ist der Timeout, kein Absturz)"
   else
     say "  (rc=$_rc)"
+    note "-> fertig (rc=$_rc)"
   fi
   sed 's/^/  /' "$_tmp" >> "$OUT"
   rm -f "$_tmp"
 }
+
+printf 'claude-doctor laeuft — Dauer hoechstens ~5 Minuten.\n' >&2
+printf 'Jede Zeile unten ist ein abgeschlossener Schritt. Report: %s\n' "$OUT" >&2
+printf 'Abbruch jederzeit mit Ctrl-C, der Teil-Report bleibt erhalten.\n\n' >&2
 
 hr "1. Umgebung"
 say "Datum:  $(date)"
