@@ -83,7 +83,12 @@ mkdir -p "$(dirname "$SETTINGS")"
 if [ -f "$SETTINGS" ]; then
   cp -p "$SETTINGS" "$SETTINGS.BAK-$(date '+%Y-%m-%d-%H%M')" || { melden "Backup fehlgeschlagen"; exit 1; }
   if grep -qE '^[[:space:]]*app_Key[[:space:]]*=' "$SETTINGS"; then
-    grep -vE '^[[:space:]]*app_Key[[:space:]]*=' "$SETTINGS" >"$SETTINGS.neu" || { melden "Schreiben fehlgeschlagen"; exit 1; }
+    # grep -v liefert Exit 1, wenn NICHTS uebrig bleibt — das ist der Normalfall
+    # bei einer settings.conf, die nur die app_Key-Zeile enthaelt, und kein Fehler.
+    # Nur Exit >1 ist ein echtes Lese-/Schreibproblem.
+    grep -vE '^[[:space:]]*app_Key[[:space:]]*=' "$SETTINGS" >"$SETTINGS.neu"
+    rc=$?
+    [ "$rc" -le 1 ] || { melden "Schreiben fehlgeschlagen"; exit 1; }
   else
     cat "$SETTINGS" >"$SETTINGS.neu"
   fi
